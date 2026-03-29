@@ -10,6 +10,9 @@ Listen to your conscience and leave a Star on this GitHub repository!
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import tkinter as tk
+import webbrowser
+import threading
 
 # ---------------------------------------------------------
 # Usage Tracker Integration (Supabase)
@@ -19,6 +22,10 @@ try:
     log_app_usage("bianchi_trajectory_sim", "sim_executed")
 except ImportError:
     print("Tracker module not found. Skipping usage logging.")
+    
+    # 임시 우회용 함수 (실제 실행 시에는 삭제하셔도 됩니다)
+    def log_app_usage(app_name, action, details=None):
+        pass
 
 # --- 1. Simulation Environment & Data Setup ---
 config = {
@@ -28,13 +35,12 @@ config = {
     'r_curve': 120.0,             # Estimated turning radius of Dunlop Curve - Turn 7 (m) /Dunlop Curve (Turn 7)의 추정 회전 반경 (m)
     't_hydroplaning': 0.8,        # Time when hydroplaning occurs (s) /수막현상 발생 시점 (s)
     'track_width': 12.0,          # Track width (m) /서킷 너비 (m)
-    'drag_coefficient': 0.1       # Virtual drag/friction coefficient during slide /가상의 마찰 계수
+    'drag_coefficient': 0.1       # Virtual drag/friction coefficient during slide /가상의 마찰 계수    
 }
 
 config['v0'] = config['initial_speed_kmh'] / 3.6
 
 def create_dunlop_curve(r, width):
-    """Actual Dunlop Curve trajectory turning left while moving downwards (180 to 270 degrees)"""
     theta = np.linspace(np.pi, 1.5 * np.pi, 200)
     
     center_line_x = r * np.cos(theta) + r
@@ -52,16 +58,13 @@ def calculate_state(t, v0, r, drag_coef):
     dt_step = t if t < config['t_hydroplaning'] else config['t_hydroplaning']
     omega = v0 / r
     
-    # Rotate from starting angle (180 deg, top) to (270 deg, right)
     initial_theta = np.pi
     current_theta = initial_theta + omega * dt_step 
     
     car_x = r * np.cos(current_theta) + r
     car_y = r * np.sin(current_theta) + r
     
-    # Velocity vector (moving downwards)
     car_v = v0
-    car_v_vec = np.array([-v0 * np.sin(current_theta), v0 * np.cos(current_theta)])
     lateral_g = (v0 ** 2) / r / 9.81
     status_text = "Following Curve (Good Grip)"
     
@@ -107,7 +110,6 @@ speed_text = ax.text(-config['r_curve'] * 0.2, config['r_curve'] * 1.3, '', colo
 lateral_g_text = ax.text(-config['r_curve'] * 0.2, config['r_curve'] * 1.2, '', color='white', fontsize=12)
 status_text_obj = ax.text(-config['r_curve'] * 0.2, config['r_curve'] * 1.1, '', color='white', fontsize=12, style='italic')
 
-# Adjust camera angle (range) to view the entire trajectory clearly
 ax.set_aspect('equal')
 ax.set_xlim(-config['r_curve'] * 0.3, config['r_curve'] * 1.5)
 ax.set_ylim(-config['r_curve'] * 0.5, config['r_curve'] * 1.5)
@@ -130,7 +132,6 @@ def update(frame):
     x_trace_data.append(cx)
     y_trace_data.append(cy)
     
-    # Applied error fix (list format)
     car_marker.set_data([cx], [cy])
     car_trace.set_data(x_trace_data, y_trace_data)
     
@@ -148,10 +149,59 @@ def update(frame):
     return car_marker, car_trace, speed_text, lateral_g_text, status_text_obj
 
 num_frames = int(config['total_time'] / config['dt'])
-# Applied error fix (blit=False)
 ani = animation.FuncAnimation(fig, update, frames=num_frames, init_func=init, blit=False, interval=config['dt']*1000)
 
 output_filename = "bianchi_trajectory_sim_corrected.gif"
 print("Rendering with the corrected trajectory. Please wait...")
 ani.save(output_filename, writer='pillow', fps=int(1/config['dt']))
 print(f"✅ Done! '{output_filename}' has been generated.")
+
+
+# --- 3. 팝업 호출 로직 (렌더링 종료 직후 실행) ---
+def show_star_popup():
+    log_app_usage("bianchi_trajectory_sim", "star_prompt_displayed", details={"ui": "tkinter_custom_msgbox"})
+    
+    # 💡 백그라운드 빈 윈도우 생성 및 숨기기
+    root = tk.Tk()
+    root.withdraw() 
+    
+    popup = tk.Toplevel(root)
+    popup.title("⭐ Support Polymath Developer")
+    popup.geometry("450x220")
+    
+    # 창을 항상 최상단에 띄워 묻히지 않게 처리
+    popup.attributes('-topmost', True)
+
+    msg = (
+        "💡 유용하게 사용하셨나요? 소스코드만 날름 가져가는 분들이 많습니다.\n"
+        "개발자의 땀과 노력에 대한 최소한의 예의로 깃허브 Star⭐를 부탁드립니다!\n\n"
+        "Did you find this useful? Please show some basic courtesy\n"
+        "for the developer's hard work by leaving a GitHub Star⭐."
+    )
+    tk.Label(popup, text=msg, justify="center", font=("", 10)).pack(padx=20, pady=20)
+    
+    def on_star_click():
+        popup.destroy() 
+        webbrowser.open("https://github.com/gohard-lab/bianchi_trajectory_sim")
+        
+        def send_log():
+            log_app_usage("bianchi_trajectory_sim", "github_star_clicked", details={"ui": "tkinter_custom_msgbox_btn"})
+        threading.Thread(target=send_log).start()
+        
+        root.quit() # 이벤트 루프 완전 종료
+
+    def on_close_click():
+        popup.destroy()
+        root.quit()
+
+    tk.Button(popup, text="👉 깃허브로 이동하여 Star 누르기", command=on_star_click, bg="#4CAF50", fg="white", font=("", 10, "bold")).pack(pady=5, ipadx=10, ipady=3)
+    # tk.Button(popup, text="닫기", command=on_close_click).pack(pady=5)
+    
+    # 사용자가 창을 직접 X 버튼으로 닫을 때의 처리
+    popup.protocol("WM_DELETE_WINDOW", on_close_click)
+    
+    # 팝업 대기 (이 코드가 끝나야 프로그램이 완전히 종료됩니다)
+    root.mainloop()
+
+# 실행 흐름의 가장 마지막에 팝업 호출
+show_star_popup()
