@@ -38,15 +38,19 @@
 ```bash
 git clone [https://github.com/gohard-lab/bianchi_trajectory.git](https://github.com/gohard-lab/bianchi_trajectory.git)
 cd bianchi_trajectory
+```
 
 **2. 가상환경 생성 및 의존성 설치 (uv 활용)
 
 ```Bash
 uv venv
 uv pip install numpy matplotlib python-dotenv supabase requests
+```
+
 **3. 시뮬레이션 실행
 
 ```Bash
 uv run python bianchi_trajectory_sim.py
+```
 
 ⚠️ 주의사항 (트래커 연동) > 프로그램 실행 통계 기능을 정상적으로 작동시키려면 프로젝트 루트 폴더에 SUPABASE_URL과 SUPABASE_KEY가 포함된 .env 파일이 반드시 필요합니다.
