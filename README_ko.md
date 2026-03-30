@@ -32,6 +32,8 @@
 
 <br>
 
+[📝 **Google Colab에서 설치 없이 바로 실행해보기**](https://colab.research.google.com/drive/1QEWXuyZl3Agb_VB1PZJEuO_uNDb__RiF?usp=sharing)
+
 ## 🚀 실행 방법 (로컬 환경)
 
 **1. 저장소 클론 (Clone)**
